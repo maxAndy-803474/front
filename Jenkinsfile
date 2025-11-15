@@ -2,12 +2,9 @@ pipeline {
     agent any
 
     environment {
+        // Образ у Docker Hub
         DOCKER_IMAGE   = "maksymonko/frontend"
-        IMAGE_TAG      = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
-
-        REGISTRY_URL   = ""
-        REGISTRY_CREDS = "dockerhub-creds"
-
+        REGISTRY_CREDS = "dockerhub-creds"   // ID credential у Jenkins
     }
 
     options {
@@ -21,50 +18,35 @@ pipeline {
             }
         }
 
-        stage('Build frontend (npm)') {
-            steps {
-                sh '''
-                npm ci
-                npm run build
-                '''
-            }
-        }
-
         stage('Build Docker image') {
             steps {
                 sh """
-                docker build -t ${DOCKER_IMAGE}:${IMAGE_TAG} .
-                docker tag ${DOCKER_IMAGE}:${IMAGE_TAG} ${DOCKER_IMAGE}:latest
+                docker build -t ${DOCKER_IMAGE}:latest .
                 """
             }
         }
 
-        stage('Push image to registry') {
+        stage('Push image to Docker Hub') {
             steps {
                 script {
-                    if (REGISTRY_URL?.trim()) {
-                        docker.withRegistry(REGISTRY_URL, REGISTRY_CREDS) {
-                            sh """
-                            docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
-                            docker push ${DOCKER_IMAGE}:latest
-                            """
-                        }
-                    } else {
-                        docker.withRegistry('', REGISTRY_CREDS) {
-                            sh """
-                            docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
-                            docker push ${DOCKER_IMAGE}:latest
-                            """
-                        }
+                    docker.withRegistry('', REGISTRY_CREDS) {
+                        sh """
+                        docker push ${DOCKER_IMAGE}:latest
+                        """
                     }
                 }
             }
         }
 
-        stage('Trigger Coolify deploy') {
+        stage('Deploy container on server') {
             steps {
                 sh """
-                curl -sSf -X POST "${COOLIFY_DEPLOY_HOOK}"
+                docker rm -f frontend-app || true
+
+                docker run -d --name frontend-app \
+                  --restart unless-stopped \
+                  -p 8081:80 \
+                  ${DOCKER_IMAGE}:latest
                 """
             }
         }
