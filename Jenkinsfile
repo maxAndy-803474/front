@@ -2,14 +2,12 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE   = "max/frontend" // або user/app
+        DOCKER_IMAGE   = "maksymonko/frontend" 
         IMAGE_TAG      = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
 
         REGISTRY_URL   = ""
         REGISTRY_CREDS = "dockerhub-creds"
 
-        // Webhook Coolify (скопіюєш з Coolify)
-        COOLIFY_DEPLOY_HOOK = "https://coolify.your-host/api/deploy?token=XXXX"
     }
 
     options {
