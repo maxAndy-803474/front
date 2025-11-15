@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE   = "maksymonko/frontend" 
+        DOCKER_IMAGE   = "maksymonko/frontend" #test
         IMAGE_TAG      = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
 
         REGISTRY_URL   = ""
