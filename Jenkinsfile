@@ -2,19 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Образ у Docker Hub
-        DOCKER_IMAGE   = "maksymonko/frontend"
-        REGISTRY_CREDS = "dockerhub-creds"   // ID credential у Jenkins
-    }
-
-    options {
-        timestamps()
+        DOCKER_IMAGE = "maksymonko/frontend"   // твій репо в Docker Hub
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    url: 'https://github.com/maxAndy-803474/front.git'
             }
         }
 
@@ -28,12 +23,18 @@ pipeline {
 
         stage('Push image to Docker Hub') {
             steps {
-                script {
-                    docker.withRegistry('', REGISTRY_CREDS) {
-                        sh """
-                        docker push ${DOCKER_IMAGE}:latest
-                        """
-                    }
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh """
+                    echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
+                    docker push ${DOCKER_IMAGE}:latest
+                    docker logout || true
+                    """
                 }
             }
         }
